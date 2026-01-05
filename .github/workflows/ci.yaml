@@ -1,17 +1,20 @@
-﻿name: 'CI'
+name: 'CI'
 
 on:
   push:
-  
+    branches:
+      - master
+      - main
+
   pull_request:
     types:
       - opened
       - synchronize
-  
+
   release:
     types:
       - created
-  
+
   workflow_dispatch:
 
 jobs:
@@ -22,9 +25,9 @@ jobs:
     permissions:
       contents: read
       actions: write
-  
+
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     needs: build
     uses: a1hena/PluginRepository/.github/workflows/deploy.yaml@master
     with:
