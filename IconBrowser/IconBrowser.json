@@ -3,5 +3,6 @@
   "Author": "a1hena",
   "Punchline": "Browse FF14 icons by patch and category",
   "Description": "A plugin to browse all FF14 UI icons, organized by patch version and category.",
-  "RepoUrl": "https://github.com/a1hena/IconBrowser"
+  "RepoUrl": "https://github.com/a1hena/IconBrowser",
+  "AssemblyVersion": "1.0.0.1"
 }
