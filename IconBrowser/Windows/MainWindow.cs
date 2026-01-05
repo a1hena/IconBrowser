@@ -326,38 +326,74 @@ public class MainWindow : Window, IDisposable
             var texture = GetTexture(iconId);
             if (texture == null) continue;
 
+            // Calculate proper size maintaining aspect ratio
+            var texWidth = (float)texture.Width;
+            var texHeight = (float)texture.Height;
+            var aspectRatio = texWidth / texHeight;
+
+            Vector2 displaySize;
+            if (aspectRatio >= 1)
+            {
+                // Wider than tall
+                displaySize = new Vector2(effectiveIconSize, effectiveIconSize / aspectRatio);
+            }
+            else
+            {
+                // Taller than wide
+                displaySize = new Vector2(effectiveIconSize * aspectRatio, effectiveIconSize);
+            }
+
+            // Center the icon within the cell
+            var cellSize = new Vector2(effectiveIconSize, effectiveIconSize);
+            var offset = (cellSize - displaySize) / 2;
+
             var isSelected = _selectedIconId == iconId;
             var cursorPos = ImGui.GetCursorScreenPos();
+            var drawList = ImGui.GetWindowDrawList();
 
             // Draw selection highlight
             if (isSelected)
             {
-                var drawList = ImGui.GetWindowDrawList();
                 drawList.AddRectFilled(
                     cursorPos - new Vector2(2, 2),
-                    cursorPos + new Vector2(effectiveIconSize + 2, effectiveIconSize + 2),
+                    cursorPos + cellSize + new Vector2(2, 2),
                     ImGui.GetColorU32(new Vector4(0.3f, 0.5f, 0.8f, 0.8f)));
             }
 
             ImGui.PushID(iconId);
 
-            // Use Image with invisible button overlay for click detection
+            // Use invisible button for the full cell area, then draw image centered
             var buttonPos = ImGui.GetCursorPos();
-            ImGui.Image(texture.Handle, new Vector2(effectiveIconSize, effectiveIconSize));
-            ImGui.SetCursorPos(buttonPos);
-            if (ImGui.InvisibleButton($"btn{iconId}", new Vector2(effectiveIconSize, effectiveIconSize)))
+            if (ImGui.InvisibleButton($"btn{iconId}", cellSize))
             {
                 _selectedIconId = iconId;
             }
 
+            var isHovered = ImGui.IsItemHovered();
+
+            // Draw the image centered within the cell
+            var imagePos = cursorPos + offset;
+            drawList.AddImage(texture.Handle, imagePos, imagePos + displaySize);
+
+            // Draw hover border
+            if (isHovered)
+            {
+                drawList.AddRect(
+                    cursorPos - new Vector2(1, 1),
+                    cursorPos + cellSize + new Vector2(1, 1),
+                    ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.8f)),
+                    0, ImDrawFlags.None, 2f);
+            }
+
             ImGui.PopID();
 
-            if (ImGui.IsItemHovered())
+            if (isHovered)
             {
                 ImGui.BeginTooltip();
                 ImGui.Text($"Icon ID: {iconId}");
                 ImGui.Text($"Category: {category}");
                 ImGui.Text($"Patch: {patchVersion}");
+                ImGui.Text($"Size: {(int)texWidth}x{(int)texHeight}");
                 ImGui.EndTooltip();
             }
 
@@ -400,13 +436,32 @@ public class MainWindow : Window, IDisposable
 
         if (texture != null)
         {
-            ImGui.Image(texture.Handle, new Vector2(64, 64) * ImGuiHelpers.GlobalScale);
+            // Display at proper aspect ratio
+            var texWidth = (float)texture.Width;
+            var texHeight = (float)texture.Height;
+            var maxSize = 64 * ImGuiHelpers.GlobalScale;
+
+            Vector2 displaySize;
+            if (texWidth >= texHeight)
+            {
+                var scale = maxSize / texWidth;
+                displaySize = new Vector2(maxSize, texHeight * scale);
+            }
+            else
+            {
+                var scale = maxSize / texHeight;
+                displaySize = new Vector2(texWidth * scale, maxSize);
+            }
+
+            ImGui.Image(texture.Handle, displaySize);
             ImGui.SameLine();
         }
 
         ImGui.BeginGroup();
         ImGui.Text($"Icon ID: {iconId}");
         ImGui.Text($"Hex: 0x{iconId:X6}");
+        if (texture != null)
+            ImGui.Text($"Size: {texture.Width}x{texture.Height}");
 
         // Show patch info
         var patchVersion = PatchDataLoader.GetIconPatchVersion(iconId);
