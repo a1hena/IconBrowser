@@ -9,15 +9,16 @@ class Program
     private const string DataBaseUrl = "https://raw.githubusercontent.com/xivapi/ffxiv-datamining/master/csv/en";
 
     // Tables that have icon mappings: (TableName, IconColumnIndex)
+    // Column indices are 0-based
     private static readonly (string Name, int IconColumn)[] IconTables =
     [
-        ("Item", 65),      // Icon column
-        ("Action", 3),     // Icon column
-        ("Status", 3),     // Icon column
-        ("Mount", 8),      // Icon column
-        ("Companion", 9),  // Icon column
-        ("Emote", 7),      // Icon column
-        ("Achievement", 4) // Icon column
+        ("Item", 68),       // Icon column (69th column)
+        ("Action", 3),      // Icon column (4th column)
+        ("Status", 3),      // Icon column (4th column)
+        ("Mount", 19),      // Icon column (20th column)
+        ("Companion", 12),  // Icon column (13th column)
+        ("Emote", 2),       // Icon column (3rd column)
+        ("Achievement", 4)  // Icon column (5th column)
     ];
 
     static async Task Main(string[] args)
@@ -153,6 +154,9 @@ class Program
         Console.WriteLine("Done!");
     }
 
+    // Latest patch ID to use for unmapped entities
+    private const int LatestPatchId = 95; // 7.0
+
     static Dictionary<int, int> ParseCsvForIcons(string csv, int iconColumn, Dictionary<int, int> entityPatchMapping)
     {
         var iconMapping = new Dictionary<int, int>();
@@ -176,8 +180,10 @@ class Program
                 if (!int.TryParse(columns[iconColumn], out var iconId)) continue;
                 if (iconId <= 0) continue;
 
-                // Get patch ID for this entity
-                if (!entityPatchMapping.TryGetValue(entityId, out var patchId)) continue;
+                // Get patch ID for this entity (use latest patch if not mapped)
+                var patchId = entityPatchMapping.TryGetValue(entityId, out var mappedPatchId)
+                    ? mappedPatchId
+                    : LatestPatchId;
 
                 // Map icon to patch (keep the earliest patch if icon appears multiple times)
                 if (!iconMapping.ContainsKey(iconId) || iconMapping[iconId] > patchId)
